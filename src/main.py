@@ -34,7 +34,7 @@ class CompatabilityMatrixFinder:
         comp_values = [comp_matrix_e[i] for i in path]
         return comp_values == [1] * len(comp_values)
 
-    def max_clique_solution(self):
+    def __max_clique_solution(self):
         self.multiplic = 10 ** 5
         G = nx.Graph()
 
@@ -49,7 +49,7 @@ class CompatabilityMatrixFinder:
         output = custom_max_weight_clique(G)
         return output[2]
 
-    def dijkstra_solution(self, s):
+    def __dijkstra_solution(self, s):
         # в массиве дист хранить списки путей, по которым дошли в вершину и их длины
         dist = [[] for i in range(self.hyp_num)]
 
@@ -70,21 +70,21 @@ class CompatabilityMatrixFinder:
                             dist[e].append([path + [e], length + self.weights[e]])
         return dist
 
-    def cvt_path2gh(self, path):
+    def __cvt_path2gh(self, path):
         ans = np.zeros((1, self.hyp_num), np.uint8).ravel()
         for el in path:
             ans[el] = int(1)
 
         return ans
 
-    def create_pred_df(self, top5_dict):
+    def __create_pred_df(self, top5_dict):
         hyp_names = ["TH"+ str(i+1) for i in range(self.hyp_num)]
         pred_df = pd.DataFrame(columns=hyp_names + ["sum(w)"])
 
         for key in sorted(top5_dict.keys(), reverse=False):
             cur_path = top5_dict[key]
             cur_weight = key / self.multiplic
-            cur_path_gh = self.cvt_path2gh(cur_path)
+            cur_path_gh = self.__cvt_path2gh(cur_path)
 
             pred_df.loc[-1] = list(cur_path_gh) + [cur_weight]  # adding a row
             pred_df.index = pred_df.index + 1  # shifting index
@@ -109,23 +109,22 @@ class CompatabilityMatrixFinder:
     def __call__(self):
         st = time()
 
-        top5_dict = self.max_clique_solution()
+        top5_dict = self.__max_clique_solution()
         top5_dict = dict(sorted(top5_dict.items(), reverse=True))
         print(f"Поиск весов занял {time() - st} секунд, ответ лежит в {self.pred_path}")
         st = time()
 
-        self.create_pred_df(top5_dict)
+        self.__create_pred_df(top5_dict)
         print(f"df создался за {time() - st} секунд")
 
 
 def main():
     st = time()
-    input_matrix_path = "data/input_matrix1.csv"
-    out_path = "data/out1.csv"
-    weights_path = "data/weights1.csv"
-    pred_path = "data/pred1.csv"
+    input_matrix_path = "../data/input_matrix1.csv"
+    out_path = "../data/out1.csv"
+    weights_path = "../data/weights1.csv"
+    pred_path = "../data/pred1.csv"
     comp_matrix_finder = CompatabilityMatrixFinder(input_matrix_path, weights_path, out_path, pred_path)
-    # comp_matrix_finder.count_gh_weight()
     comp_matrix_finder()
 
     print(f"Решение отработало за {time()-st} секунд")
