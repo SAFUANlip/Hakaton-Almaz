@@ -1,3 +1,4 @@
+import itertools
 from time import time
 
 import networkx as nx
@@ -8,26 +9,26 @@ from custom_lib.custom_clique_alg import custom_max_weight_clique
 
 
 class CompatabilityMatrixFinder:
-    def __init__(self, input_matrix_path, weights_path, pred_path):
+    def __init__(self, pred_path, input_with_weights_path):
         self.weights = None
         self.input_df = None
         self.out_df = None
         self.hyp_num = None
         self.pred_path = pred_path
 
-        self.__read_data(input_matrix_path, weights_path)
+        self.__read_data(input_with_weights_path)
 
-    def __read_data(self, input_matrix_path, weights_path):
-        weights = pd.read_csv(weights_path, header=None).to_numpy()
-        self.weights = weights.reshape(-1)
+    def __read_data(self, input_with_weights_path):
+        input_with_weights = pd.read_csv(input_with_weights_path, header=None).to_numpy()
 
-        input_df = pd.read_csv(input_matrix_path, header=None).to_numpy()
-        self.comp_matrix = input_df
+        self.weights = input_with_weights[-1, :].reshape(-1)
+
+        self.comp_matrix = input_with_weights[:-1, :]
 
         self.hyp_num = len(self.weights)
 
     def __is_compatable(self, path, e):
-        comp_matrix_e = self.comp_matrix[e, :]
+        comp_matrix_e = self.comp_matrix[:, e]
         comp_values = [comp_matrix_e[i] for i in path]
         return comp_values == [1] * len(comp_values)
 
@@ -46,17 +47,21 @@ class CompatabilityMatrixFinder:
         output = custom_max_weight_clique(G)
         return output[2]
 
-    def __dijkstra_solution(self, s):
+    def __dijkstra_solution(self):
+        s = 0
+
+        max_len = 0
+        path_max_len = []
         # в массиве дист хранить списки путей, по которым дошли в вершину и их длины
         dist = [[] for i in range(self.hyp_num)]
 
         dist[s] = [[[s], self.weights[s]]]
         for i in range(self.hyp_num):
             v = i
-            # идем по строке в матрице совместности
+           # идем по строке в матрице совместности
 
             for e in range(v + 1, self.hyp_num):
-                if self.comp_matrix[e, v] == 1:
+                if self.comp_matrix[v, e] == 1:
                     for path_i in range(len(dist[v])):
                         path_length_cur = dist[v][path_i]
                         # print(dist, dist[v], path_length_cur)
@@ -65,7 +70,16 @@ class CompatabilityMatrixFinder:
 
                         if self.__is_compatable(path, e):
                             dist[e].append([path + [e], length + self.weights[e]])
-        return dist
+
+        dist = list(itertools.chain(*dist))
+        dist.sort(key=lambda x: x[1], reverse=True)
+        ans_list = dist[:5]
+
+        for ans in ans_list:
+            print(ans[0], ans[1])
+
+
+
 
     def __cvt_path2gh(self, path):
         ans = np.zeros((1, self.hyp_num), np.uint8).ravel()
@@ -91,6 +105,7 @@ class CompatabilityMatrixFinder:
         pred_df.to_csv(self.pred_path, index=False)
 
     def __call__(self):
+        # self.__dijkstra_solution()
         st = time()
 
         top5_dict = self.__max_clique_solution()
@@ -105,11 +120,10 @@ class CompatabilityMatrixFinder:
 def main():
     st = time()
 
-    input_matrix_path = "../data/input_matrix1.csv"
-    weights_path = "../data/weights1.csv"
+    input_with_weights_path =  "../data/input_with_weights.csv"
     pred_path = "../data/pred1.csv"
 
-    comp_matrix_finder = CompatabilityMatrixFinder(input_matrix_path, weights_path, pred_path)
+    comp_matrix_finder = CompatabilityMatrixFinder( pred_path, input_with_weights_path)
     comp_matrix_finder()
 
     print(f"Решение отработало за {time()-st} секунд")
