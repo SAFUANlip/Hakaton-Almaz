@@ -8,24 +8,21 @@ from custom_lib.custom_clique_alg import custom_max_weight_clique
 
 
 class CompatabilityMatrixFinder:
-    def __init__(self, input_matrix_path, weights_path, out_path, pred_path):
+    def __init__(self, input_matrix_path, weights_path, pred_path):
         self.weights = None
         self.input_df = None
         self.out_df = None
         self.hyp_num = None
         self.pred_path = pred_path
 
-        self.__read_data(input_matrix_path, weights_path, out_path)
+        self.__read_data(input_matrix_path, weights_path)
 
-    def __read_data(self, input_matrix_path, weights_path, out_path=None):
+    def __read_data(self, input_matrix_path, weights_path):
         weights = pd.read_csv(weights_path, header=None).to_numpy()
         self.weights = weights.reshape(-1)
 
         input_df = pd.read_csv(input_matrix_path, header=None).to_numpy()
         self.comp_matrix = input_df
-
-        if out_path is not None:
-            self.out_df = pd.read_csv(out_path, header=None).to_numpy()
 
         self.hyp_num = len(self.weights)
 
@@ -93,19 +90,6 @@ class CompatabilityMatrixFinder:
         pred_df[hyp_names] = pred_df[hyp_names].astype(int)
         pred_df.to_csv(self.pred_path, index=False)
 
-    def count_gh_weight(self):
-        for i in range(1,self.out_df.shape[0] ):
-            counted_ans = 0
-            cur_row = self.out_df[i,:]
-            cur_path = cur_row[1 :-1]
-            cur_ans = float(cur_row[-1])
-
-            for j in range(len(cur_path)):
-                if "1" in cur_path[j]:
-                    counted_ans += self.weights[j]
-
-            print(cur_ans, counted_ans)
-
     def __call__(self):
         st = time()
 
@@ -120,11 +104,12 @@ class CompatabilityMatrixFinder:
 
 def main():
     st = time()
+
     input_matrix_path = "../data/input_matrix1.csv"
-    out_path = "../data/out1.csv"
     weights_path = "../data/weights1.csv"
     pred_path = "../data/pred1.csv"
-    comp_matrix_finder = CompatabilityMatrixFinder(input_matrix_path, weights_path, out_path, pred_path)
+
+    comp_matrix_finder = CompatabilityMatrixFinder(input_matrix_path, weights_path, pred_path)
     comp_matrix_finder()
 
     print(f"Решение отработало за {time()-st} секунд")
