@@ -1,10 +1,10 @@
-import itertools
 from time import time
 
 import networkx as nx
 import numpy as np
 import pandas as pd
-from custom_lib.custom_click_alg import custom_max_weight_clique
+
+from custom_lib.custom_clique_alg import custom_max_weight_clique
 
 
 class CompatabilityMatrixFinder:
@@ -81,7 +81,7 @@ class CompatabilityMatrixFinder:
         hyp_names = ["TH"+ str(i+1) for i in range(self.hyp_num)]
         pred_df = pd.DataFrame(columns=hyp_names + ["sum(w)"])
 
-        for key in top5_dict.keys():
+        for key in sorted(top5_dict.keys(), reverse=False):
             cur_path = top5_dict[key]
             cur_weight = key / self.multiplic
             cur_path_gh = self.cvt_path2gh(cur_path)
@@ -93,28 +93,42 @@ class CompatabilityMatrixFinder:
         pred_df[hyp_names] = pred_df[hyp_names].astype(int)
         pred_df.to_csv(self.pred_path, index=False)
 
+    def count_gh_weight(self):
+        for i in range(1,self.out_df.shape[0] ):
+            counted_ans = 0
+            cur_row = self.out_df[i,:]
+            cur_path = cur_row[1 :-1]
+            cur_ans = float(cur_row[-1])
+
+            for j in range(len(cur_path)):
+                if "1" in cur_path[j]:
+                    counted_ans += self.weights[j]
+
+            print(cur_ans, counted_ans)
+
     def __call__(self):
         st = time()
 
         top5_dict = self.max_clique_solution()
         top5_dict = dict(sorted(top5_dict.items(), reverse=True))
-        print(f"Решение отработало за {time() - st} секунд")
+        print(f"Поиск весов занял {time() - st} секунд, ответ лежит в {self.pred_path}")
         st = time()
 
         self.create_pred_df(top5_dict)
-
-
-
         print(f"df создался за {time() - st} секунд")
 
 
 def main():
-    input_matrix_path = "data/input_matrix3.csv"
-    out_path = "data/out.csv"
-    weights_path = "data/weights3.csv"
-    pred_path = "data/pred4.csv"
+    st = time()
+    input_matrix_path = "data/input_matrix1.csv"
+    out_path = "data/out1.csv"
+    weights_path = "data/weights1.csv"
+    pred_path = "data/pred1.csv"
     comp_matrix_finder = CompatabilityMatrixFinder(input_matrix_path, weights_path, out_path, pred_path)
+    # comp_matrix_finder.count_gh_weight()
     comp_matrix_finder()
+
+    print(f"Решение отработало за {time()-st} секунд")
 
 
 if __name__ == "__main__":

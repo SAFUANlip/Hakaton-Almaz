@@ -761,5 +761,4 @@ def custom_max_weight_clique(G, weight="weight"):
 
     mwc = MaxWeightClique(G, weight)
     mwc.find_max_weight_clique()
-    print(f"Custom Click")
     return mwc.incumbent_nodes, mwc.incumbent_weight, mwc.top5cliques
