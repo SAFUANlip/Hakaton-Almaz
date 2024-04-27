@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 from time import time
 
+
 class CompatabilityMatrixFinder:
     def __init__(self, input_matrix_path, weights_path, out_path):
         self.weights = None
@@ -12,6 +13,7 @@ class CompatabilityMatrixFinder:
         self.hyp_num = None
 
         self.__read_data(input_matrix_path, weights_path, out_path)
+
     def __read_data(self, input_matrix_path, weights_path, out_path = None):
         weights = pd.read_csv(weights_path, header=None).to_numpy()
         self.weights = weights.reshape(-1)
@@ -56,7 +58,7 @@ class CompatabilityMatrixFinder:
 
                         # dist[e] = self.delete_duplicates(dist[e])
 
-
+        print(s, dist, '\n')
         return dist
 
     def __call__(self):
@@ -84,13 +86,13 @@ class CompatabilityMatrixFinder:
         print(max_len, path_max_len)
 
 
-
-
 def main():
     input_matrix_path = "data/input_matrix.csv"
     out_path = "data/out.csv"
     weights_path = "data/weights.csv"
     comp_matrix_finder = CompatabilityMatrixFinder(input_matrix_path,weights_path, out_path)
     comp_matrix_finder()
+
+
 if __name__ == "__main__":
     main()
