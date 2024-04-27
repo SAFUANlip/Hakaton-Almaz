@@ -14,6 +14,7 @@
 pip install -r requirements.txt
 ```
 
+**Версия Python: 3.10**
 
 # Подготовка данных
 
@@ -40,31 +41,38 @@ pip install -r requirements.txt
  1,0,1,67.27018
  1,0,1,66.58478
 ```
-- **опционально** путь к файлу с ответами, полученными полным перебором
-```
-Пример содержимого файла out.csv:
- TH1,TH2,TH3,sum(w)
- 1,0,1,69.91878
- 1,0,1,69.23338
- 1,0,1,67.88508
- 1,0,1,67.27018
- 1,0,1,66.58478
-```
+
 
 ## Files overview
 
 * [/src](https://github.com/SAFUANlip/Hakaton-Almaz/tree/master/src) - исходный код
-* [/data](https://github.com/SAFUANlip/Hakaton-Almaz/tree/master/src) - исходный код
+* [/data](https://github.com/SAFUANlip/Hakaton-Almaz/tree/master/data) - входные и выходные данные
 
-### Main code
+## Main code
 
-* [data/utils/create_norm_data.py]() - нормировка и обрезка исходных данных для дальнейшей нарезки тайлов
-* [data/splitter.py]() - создать тайлы
-* [data/dataset_pipeline.py]() - создать обучающую и валидационную выборку
-* [train.py]() - обучение
-* [inference/detect.py]() - инференс и утилиты для него
+* [src/main.py]() - поиск топ-5 глобальных траекторных гипотез
 
-### Tools
-* [utils/logger.py]() - логгеры TF и neptune
-* [data/utils/transform.py]() - разные трансформации для cv2
-* [losses.py]() - функции ошибок
+## Как получить оптимальные гипотезы с помощью нашего алгоритма
+- подготовить данные, как указано выше
+- положить их в папку /data
+- указать пути к входным данным в src/main.py
+
+```
+Пример путей к входным данным в main.py(), main()
+    input_matrix_path = "../data/input_matrix1.csv"
+    weights_path = "../data/weights1.csv"
+    pred_path = "../data/pred1.csv"
+```
+
+- запустить main.py
+
+**В консоль выведутся:**
+-   время поиска весов, путь к папке с сохраненными гипотезами и их весами
+- время создания .csv с ответом
+- время отработки решения
+```
+Пример вывода в консоль после запуска main.py
+    Поиск весов занял 0.0070002079010009766 секунд, ответ лежит в ../data/pred1.csv
+    df создался за 0.015030860900878906 секунд
+    Решение отработало за 0.029031038284301758 секунд
+```
