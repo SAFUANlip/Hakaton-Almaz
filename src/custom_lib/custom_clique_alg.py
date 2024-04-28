@@ -11,6 +11,8 @@ from collections import defaultdict, deque
 from itertools import chain, combinations, islice
 
 import networkx as nx
+import numpy as np
+from matplotlib import pyplot as plt
 from networkx.utils import not_implemented_for
 
 __all__ = [
@@ -155,7 +157,7 @@ def find_cliques(G, nodes=None):
     node. The following produces a dictionary keyed by node whose
     values are the number of maximal cliques in `G` that contain the node:
 
-    >>> pprint({n: sum(1 for c in nx.find_cliques(G) if n in c) for n in G})
+    >>> print({n: sum(1 for c in nx.find_cliques(G) if n in c) for n in G})
     {0: 13,
      1: 6,
      2: 7,
@@ -622,11 +624,15 @@ class MaxWeightClique:
         The weight of the incumbent clique
     """
 
-    def __init__(self, G, weight):
+    def __init__(self, G, weight, multiplic, weights_nodes):
         self.G = G
         self.incumbent_nodes = []
         self.incumbent_weight = 0
         self.top5cliques = {}
+        self.multiplic = multiplic
+        self.weights_nodes = weights_nodes
+        self.pos = nx.spring_layout(G)
+        self.i = 0
 
         if weight is None:
             self.node_weights = {v: 1 for v in G.nodes()}
@@ -640,7 +646,38 @@ class MaxWeightClique:
                     raise ValueError(errmsg)
             self.node_weights = {v: G.nodes[v][weight] for v in G.nodes()}
 
-    # def update_top5cliques(self):
+    def plot_graph(self, nodes, weight, G):
+        plt.figure(figsize=(20, 10))
+        plt.title(f"Вес текущей гипотезы = {np.round(weight/self.multiplic, 1)}, Максимальный вес гипотезы {np.round(self.incumbent_weight/self.multiplic, 1)}, Шаг {self.i}")
+
+        red_edges = []
+        for i in range(len(nodes) - 1):
+            red_edges.append((nodes[i], nodes[i+1]))
+
+        val_map2 = {}
+        label_dict = {}
+
+        for i in range(len(self.weights_nodes)):
+            label_dict[i] =i
+            label_dict[i] = f"{i}\n{np.round(self.weights_nodes[i],1)}"
+
+        for i in range(len(nodes)):
+            val_map2[nodes[i]] = 1
+
+
+        values = [val_map2.get(node, 0) for node in G.nodes()]
+        labels = nx.get_edge_attributes(G, 'weight')
+        nx.draw_networkx_edge_labels(G, self.pos, edge_labels=labels, font_size=1)
+
+        nx.draw_networkx_nodes(G, self.pos, cmap=plt.get_cmap('Spectral_r'),
+                               node_color=values, node_size=1000)
+        nx.draw_networkx_labels(G,  self.pos, labels = label_dict,font_size=10, font_color="white")
+
+        nx.draw_networkx_edges(G, self.pos, arrows=False, alpha=0.1)
+        nx.draw_networkx_edges(G,  self.pos, edgelist=red_edges, edge_color='r', arrows=True)
+
+        plt.savefig(f"../img/img{self.i}.png")
+        self.i +=1
 
     def update_incumbent_if_improved(self, C, C_weight):
         """Update the incumbent if the node set C has greater weight.
@@ -693,10 +730,23 @@ class MaxWeightClique:
         self.update_incumbent_if_improved(C, C_weight)
         branching_nodes = self.find_branching_nodes(P, self.incumbent_weight - C_weight)
         while branching_nodes:
+
+
+
             v = branching_nodes.pop()
             P.remove(v)
             new_C = C + [v]
             new_C_weight = C_weight + self.node_weights[v]
+
+
+            if len(self.top5cliques.keys()) < 5:
+                self.top5cliques[new_C_weight] = new_C
+            elif min(self.top5cliques.keys()) < new_C_weight:
+                self.top5cliques.pop(min(self.top5cliques.keys()))
+                self.top5cliques[new_C_weight] = new_C
+
+
+
             new_P = [w for w in P if self.G.has_edge(v, w)]
             self.expand(new_C, new_C_weight, new_P)
 
@@ -708,9 +758,9 @@ class MaxWeightClique:
         self.expand([], 0, nodes)
 
 
-@not_implemented_for("directed")
+# @not_implemented_for("directed")
 # @nx._dispatchable(node_attrs="weight")
-def custom_max_weight_clique(G, weight="weight"):
+def custom_max_weight_clique( multiplic, weights_nodes, comp_matrix, weight="weight"):
     """Find a maximum weight clique in G.
 
     A *clique* in a graph is a set of nodes such that every two distinct nodes
@@ -759,6 +809,17 @@ def custom_max_weight_clique(G, weight="weight"):
            Texas A&M University (2016).
     """
 
-    mwc = MaxWeightClique(G, weight)
+    G2 = nx.Graph()
+
+    for i in range(len(weights_nodes)):
+        G2.add_node(i, weight=int(weights_nodes[i] * multiplic))
+
+    for i in range(len(weights_nodes)):
+        for j in range(i + 1, len(weights_nodes)):
+            if comp_matrix[i, j] == 1:
+                G2.add_edge(i, j)
+
+
+    mwc = MaxWeightClique(G2, weight, multiplic, weights_nodes)
     mwc.find_max_weight_clique()
     return mwc.incumbent_nodes, mwc.incumbent_weight, mwc.top5cliques

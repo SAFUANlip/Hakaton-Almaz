@@ -1,10 +1,5 @@
 import itertools
-from time import time
-
-import networkx as nx
 import numpy as np
-import pandas as pd
-
 from custom_lib.custom_clique_alg import custom_max_weight_clique
 
 
@@ -19,10 +14,9 @@ class CompatabilityMatrixFinder:
         self.__read_data(input_with_weights_path)
 
     def __read_data(self, input_with_weights_path):
-        input_with_weights = pd.read_csv(input_with_weights_path, header=None).to_numpy()
+        input_with_weights = np.loadtxt(input_with_weights_path, delimiter=',')
 
-        self.weights = input_with_weights[-1, :].reshape(-1)
-
+        self.weights = input_with_weights[-1, :]
         self.comp_matrix = input_with_weights[:-1, :]
 
         self.hyp_num = len(self.weights)
@@ -32,39 +26,26 @@ class CompatabilityMatrixFinder:
         comp_values = [comp_matrix_e[i] for i in path]
         return comp_values == [1] * len(comp_values)
 
-    def __max_clique_solution(self):
+    def max_clique_solution(self):
         self.multiplic = 10 ** 5
-        G = nx.Graph()
-
-        for i in range(len(self.weights)):
-            G.add_node(i, weight=int(self.weights[i] * self.multiplic))
-
-        for i in range(len(self.weights)):
-            for j in range(i + 1, len(self.weights)):
-                if self.comp_matrix[i, j] == 1:
-                    G.add_edge(i, j)
-
-        output = custom_max_weight_clique(G)
+        output = custom_max_weight_clique(self.multiplic, self.weights, self.comp_matrix)
         return output[2]
 
-    def __dijkstra_solution(self):
+    def dijkstra_solution(self):
         s = 0
 
-        max_len = 0
-        path_max_len = []
         # в массиве дист хранить списки путей, по которым дошли в вершину и их длины
         dist = [[] for i in range(self.hyp_num)]
 
         dist[s] = [[[s], self.weights[s]]]
         for i in range(self.hyp_num):
             v = i
-           # идем по строке в матрице совместности
+            # идем по строке в матрице совместности
 
             for e in range(v + 1, self.hyp_num):
                 if self.comp_matrix[v, e] == 1:
                     for path_i in range(len(dist[v])):
                         path_length_cur = dist[v][path_i]
-                        # print(dist, dist[v], path_length_cur)
                         path = path_length_cur[0]
                         length = path_length_cur[1]
 
@@ -75,59 +56,71 @@ class CompatabilityMatrixFinder:
         dist.sort(key=lambda x: x[1], reverse=True)
         ans_list = dist[:5]
 
-        for ans in ans_list:
-            print(ans[0], ans[1])
+    def __check_is_accept(self, comp_traj, candidate, index):
+        for i in range(len(candidate)):
+            if candidate[i] == 1 and comp_traj[i][index] == 0:
+                return False
+        return True
 
+    def __recurent_search(self, comp_traj, candidate_cur):
+        if len(candidate_cur) == self.hyp_num:
+            self.available_hyps.append(candidate_cur)
+            return
+        if self.__check_is_accept(comp_traj, candidate_cur, len(candidate_cur)):
+            self.__recurent_search(comp_traj, candidate_cur + [1])
+        self.__recurent_search(comp_traj, candidate_cur + [0])
 
+    def complete_search_solution(self):
+        self.available_hyps = []
+        comp_matrix_symm = np.maximum(self.comp_matrix, self.comp_matrix)
+        self.__recurent_search(comp_matrix_symm, [1])
+        self.__recurent_search(comp_matrix_symm, [0])
+        dist = []
+
+        for hyp in self.available_hyps:
+            dist.append([hyp, sum(np.array(hyp) * np.array(self.weights))])
+
+        dist.sort(key=lambda x: x[1], reverse=True)
+        ans_list = dist[:5]
 
 
     def __cvt_path2gh(self, path):
-        ans = np.zeros((1, self.hyp_num), np.uint8).ravel()
+        ans = ['0,' for i in range(self.hyp_num)]
         for el in path:
-            ans[el] = int(1)
+            ans[el] = "1,"
 
         return ans
 
     def __create_pred_df(self, top5_dict):
-        hyp_names = ["TH"+ str(i+1) for i in range(self.hyp_num)]
-        pred_df = pd.DataFrame(columns=hyp_names + ["sum(w)"])
+        hyp_names = ["TH" + str(i + 1) for i in range(self.hyp_num)] + ["sum(w)\n"]
+        hyp_names_str = ",".join(hyp_names)
+        data_pred = [hyp_names_str]
 
-        for key in sorted(top5_dict.keys(), reverse=False):
+        for key in sorted(top5_dict.keys(), reverse=True):
             cur_path = top5_dict[key]
             cur_weight = key / self.multiplic
             cur_path_gh = self.__cvt_path2gh(cur_path)
+            ans_list = cur_path_gh + [str(cur_weight) + "\n"]
+            ans_string = "".join(ans_list)
+            data_pred.append(ans_string)  # adding a row
 
-            pred_df.loc[-1] = list(cur_path_gh) + [cur_weight]  # adding a row
-            pred_df.index = pred_df.index + 1  # shifting index
-            pred_df = pred_df.sort_index()
-
-        pred_df[hyp_names] = pred_df[hyp_names].astype(int)
-        pred_df.to_csv(self.pred_path, index=False)
+        with open(self.pred_path, "w") as file:
+            for string in data_pred:
+                file.write(string)
 
     def __call__(self):
-        # self.__dijkstra_solution()
-        st = time()
-
-        top5_dict = self.__max_clique_solution()
+        top5_dict = self.max_clique_solution()
         top5_dict = dict(sorted(top5_dict.items(), reverse=True))
-        print(f"Поиск весов занял {time() - st} секунд, ответ лежит в {self.pred_path}")
-        st = time()
 
         self.__create_pred_df(top5_dict)
-        print(f"df создался за {time() - st} секунд")
 
 
 def main():
-    st = time()
-
-    input_with_weights_path =  "../data/input_with_weights.csv"
+    input_with_weights_path = "../data/input_with_weights.csv"
     pred_path = "../data/pred1.csv"
 
-    comp_matrix_finder = CompatabilityMatrixFinder( pred_path, input_with_weights_path)
+    comp_matrix_finder = CompatabilityMatrixFinder(pred_path, input_with_weights_path)
     comp_matrix_finder()
-
-    print(f"Решение отработало за {time()-st} секунд")
-
 
 if __name__ == "__main__":
     main()

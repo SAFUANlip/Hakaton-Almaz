@@ -1,7 +1,7 @@
 # Реализация алгоритма поиска наиболее вероятных глобальных траекторных гипотез в рамках Хакатона "Phystech Radar Tech Challenge"
 
 Визуализация обхода графа при поиске наилучшей глобальной гипотезы появится через пару секунд
-![визуализация_расширенная.gif](визуализация_расширенная.gif)
+![визуализация_расширенная.gif](gifs/визуализация_расширенная.gif)
 
 ## Состав команды Staying Alive:
 -   Песоцкая Алиса
@@ -47,6 +47,7 @@ pip install -r requirements.txt
 
 * [/src](https://github.com/SAFUANlip/Hakaton-Almaz/tree/master/src) - исходный код
 * [/data](https://github.com/SAFUANlip/Hakaton-Almaz/tree/master/data) - входные и выходные данные
+* [/gifs](https://github.com/SAFUANlip/Hakaton-Almaz/tree/master/gifs) - визуализация обхода графа
 
 ## Основной код
 
@@ -65,15 +66,10 @@ pip install -r requirements.txt
 
 - запустить main.py
 
-**По окончании работы алгоритма в консоль выведутся:**
--   время поиска весов, путь к папке с сохраненными гипотезами и их весами
-- время создания .csv с ответом
-- время отработки решения
-```
-Пример вывода в консоль после запуска main.py
-    Поиск весов занял 0.0070002079010009766 секунд, ответ лежит в ../data/pred1.csv
-    df создался за 0.015030860900878906 секунд
-    Решение отработало за 0.029031038284301758 секунд
-```
-
 **По заданному раннее пути pred_path соханятся глобальные гипотезы и их веса**
+
+
+Источники:
+- Kati Rozman, AnGhysels, Dušanka Janežič & Janez Konc “An exact algorithm to find a maximum weight clique in a weighted undirected graph.” (2024)
+- Jeffrey S, Hicks, Illya V. “Combinatorial Branch-and-Bound for the Maximum Weight Independent Set Problem.” Technical Report, Texas A&M University Warren,(2016).
+- W.A., Neto, M.B.C., Rodrigues, C.D., Michelon, P. “Um algoritmo de branch and bound para o problema da clique máxima ponderada.” Proceedings of XLVII SBPO 1 Tavares, (2015).
